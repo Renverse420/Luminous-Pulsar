@@ -120,7 +120,8 @@ void CtrlRaceInputViewer::OnUpdate() {
 u32 CtrlRaceInputViewer::Count() {
     if(Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_MENU, SETTINGMENU_RADIO_INPUT) == MENUSETTING_INPUT_DISABLED)
         return 0;
-    else if(Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_MENU, SETTINGMENU_RADIO_INPUT) == MENUSETTING_INPUT_ENABLED) {
+    else if(Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_MENU, SETTINGMENU_RADIO_INPUT) == MENUSETTING_INPUT_ENABLED || 
+    Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_MENU, SETTINGMENU_RADIO_INPUT) == MENUSETTING_INPUT_FORCED) {
         // Declare and initialize scenario here
         const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
         u32 localPlayerCount = scenario.localPlayerCount;
@@ -149,7 +150,27 @@ void CtrlRaceInputViewer::Load(const char* variant, u8 id) {
     this->hudSlotId = id;
     ControlLoader loader(this);
     const char* groups[] = { nullptr, nullptr };
-    loader.Load(UI::raceFolder, "PULInputViewer", variant, groups);
+
+    const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
+    const ControllerType controllerType = SectionMgr::sInstance->pad.padInfos[0].controllerHolder->curController->GetType();
+    const int inputSetting = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_MENU, SETTINGMENU_RADIO_INPUT);
+    const bool isGhostRace = (sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU);
+
+    if (inputSetting == MENUSETTING_INPUT_FORCED || isGhostRace) {
+        loader.Load(UI::raceFolder, "PULInputViewer", variant, groups);
+        return;
+    }
+
+    if (controllerType == NUNCHUCK && inputSetting == MENUSETTING_INPUT_ENABLED && !isGhostRace) {
+        loader.Load(UI::raceFolder, "PULInputViewerNunchuck", variant, groups);
+        return;
+    }
+
+    if (controllerType == WHEEL || controllerType == CLASSIC || controllerType == GCN) {
+        loader.Load(UI::raceFolder, "PULInputViewer", variant, groups);
+    }
+
+        loader.Load(UI::raceFolder, "PULInputViewer", variant, groups);
 }
 void CtrlRaceInputViewer::setDpad(DpadState state) {
     if (state == m_dpadState) {
