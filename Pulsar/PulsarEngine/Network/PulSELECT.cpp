@@ -8,7 +8,7 @@
 #include <Network/PulSELECT.hpp>
 #include <Settings/Settings.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
-
+#include <Network/GPReport.hpp>
 
 namespace Pulsar {
 namespace Network {
@@ -104,16 +104,23 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
                 if (isCT) aidVote = cupsConfig->RandomizeTrack();
                 else {
                     const bool isVS = (mode == RKNet::ONLINEMODE_PRIVATE_VS || mode == RKNet::ONLINEMODE_PUBLIC_VS);
-                    const u32 trackCount = isVS ? 32 : 10;
-                    u32 next = random.NextLimited(trackCount);
-                    const CourseId prev = Racedata::sInstance->racesScenario.settings.courseId;
-                    if (next == prev) { //prevent repeats
-                        const u32 offsetTrick = trackCount - 1;
-                        const u32 offset = random.NextLimited(trackCount - 1);
-                        next = offset + next + 1;
-                        if (offsetTrick < next) next -= offsetTrick - 1;
+                    const bool isBattle = (mode == RKNet::ONLINEMODE_PRIVATE_BATTLE || mode == RKNet::ONLINEMODE_PUBLIC_BATTLE);
+                    u32 next;
+                    if (isBattle) {
+                        const u32 battleTrackCount = 10;
+                        next = random.NextLimited(battleTrackCount);
+                        next += 0x20;
+                    } else {
+                        const u32 trackCount = isVS ? 32 : 10;
+                        next = random.NextLimited(trackCount);
+                        const CourseId prev = Racedata::sInstance->racesScenario.settings.courseId;
+                        if (next == prev) { //prevent repeats
+                            const u32 offsetTrick = trackCount - 1;
+                            const u32 offset = random.NextLimited(trackCount - 1);
+                            next = offset + next + 1;
+                            if (offsetTrick < next) next -= offsetTrick - 1;
+                        }
                     }
-                    if (isVS) next += trackCount; //add 32 to match battle ids
                     aidVote = static_cast<PulsarId>(next);
                 }
             }
@@ -142,6 +149,10 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
             system->netMgr.lastTracks[system->netMgr.curBlockingArrayIdx] = vote;
             system->netMgr.curBlockingArrayIdx = (system->netMgr.curBlockingArrayIdx + 1) % system->GetInfo().GetTrackBlocking();
         }
+        ReportU32(
+            "wl:mkw_select_course", static_cast<u32>(vote)
+        );
+        ReportU32("wl:mkw_select_cc", static_cast<u32>(GetEngineClass(self)));
     }
 }
 kmCall(0x80661490, ExpSELECTHandler::DecideTrack);

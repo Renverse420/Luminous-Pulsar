@@ -1946,3 +1946,8 @@ Update__7SectionFv = 0x806224f8
 CreateFriendKey__3DWCFPCQ23DWC11AccUserData = 0x800ec6bc
 Update__8ElineMgrFv=0x8052d888
 UpdateFromPrevRace__16RacedataScenarioFv=0x8052f1e0
+
+Sqrt__Q23EGG4MathFf = 0x8022f80c
+gpiAppendStringToBuffer__2GPFPPQ22GP10ConnectionPQ22GP7IBufferPCc = 0x800ff014
+sInstance__Q23DWC12MatchControl = 0x8038630C
+GetFile__14ArchivesHolderCFPCcPUi = 0x8052a760

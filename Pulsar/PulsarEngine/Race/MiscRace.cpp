@@ -78,10 +78,11 @@ kmWrite32(0x807eb160, 0x88de01b4);
 //credit to XeR for finding the float address
 static void BattleGlitchEnable() {
     const u8 val = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_RACE, SETTINGRACE_RADIO_BATTLE);
+    const u32 gamemode = Racedata::sInstance->racesScenario.settings.gamemode;
     float maxDistance = 7500.0f;
     if (val == RACESETTING_BATTLE_GLITCH_ENABLED) maxDistance = 75000.0f;
     System* system = System::sInstance;
-    if (system->IsContext(PULSAR_MODE_OTT)) {
+    if (system->IsContext(PULSAR_MODE_OTT) || gamemode == MODE_TIME_TRIAL) {
         const Input::RealControllerHolder* controllerHolder = SectionMgr::sInstance->pad.padInfos[0].controllerHolder;
         const ControllerType controllerType = controllerHolder->curController->GetType();
         const u16 inputs = controllerHolder->inputStates[0].buttonRaw;
@@ -96,6 +97,9 @@ static void BattleGlitchEnable() {
             break;
         case CLASSIC:
             toggleInput = WPAD::WPAD_CL_TRIGGER_ZL;
+            break;
+        case GCN:
+            toggleInput = WPAD::WPAD_BUTTON_Z;
             break;
         }
         if ((newInputs & toggleInput) == toggleInput) system->ottHideNames = !system->ottHideNames;
@@ -248,18 +252,18 @@ kmWrite32(0x80856560, 0x60000000);
 kmWrite32(0x80544928, 0x7C601B78);
 
 //HUD Color Modifier by Spaghetti Noppers
-kmWrite32(0x80895CC0, 0x00200086); 
-kmWrite32(0x80895CC4, 0x008600FF); 
+kmWrite32(0x80895CC0, 0x00200086);
+kmWrite32(0x80895CC4, 0x008600FF);
 kmWrite32(0x80895CC8, 0x005200A3);
-kmWrite32(0x80895CCC, 0x00A300FF); 
-kmWrite32(0x80895CD0, 0x005200A3); 
-kmWrite32(0x80895CD4, 0x00A30046); 
-kmWrite32(0x80895CE8, 0x00200086);
-kmWrite32(0x80895CEC, 0x00860046); 
+kmWrite32(0x80895CCC, 0x00A300FF);
+kmWrite32(0x80895CD0, 0x005200A3);
+kmWrite32(0x80895CD4, 0x00A30046);
 kmWrite32(0x80895CD8, 0x00200086);
-kmWrite32(0x80895CDC, 0x008600FF); 
-kmWrite32(0x80895CE0, 0x00200086); 
-kmWrite32(0x80895CE4, 0x008600FF); 
+kmWrite32(0x80895CDC, 0x008600FF);
+kmWrite32(0x80895CE0, 0x00200086);
+kmWrite32(0x80895CE4, 0x008600FF);
+kmWrite32(0x80895CE8, 0x00200086);
+kmWrite32(0x80895CEC, 0x00860046);
 
 //AntiFlicker by Riidefi
 asmFunc AntiFlicker() {

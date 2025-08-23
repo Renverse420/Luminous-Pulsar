@@ -1,5 +1,6 @@
 #ifndef _GPTYPES_
 #define _GPTYPES_
+#include <include/c_stdlib.h>
 #include <types.hpp>
 #include <core/GS/DArray.h>
 #include <core/GS/GT2/GT2Core.hpp>
@@ -30,6 +31,13 @@ struct IOperation {
     Result result;
     IOperation* next;
 };
+
+typedef struct {
+    u8 _0x000[0x210 - 0x000];
+    IBuffer outputBuffer;
+    u8 _0x220[0x5E0 - 0x220];
+    IBuffer updateproBuffer;
+} IConnection;
 
 struct Connection {
     char errorString[256];

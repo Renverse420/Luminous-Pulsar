@@ -76,6 +76,10 @@ void ExpSection::CreatePulPages() {
         case SECTION_P1_WIFI_FRIEND_TEAMVS:   //0x71
         case SECTION_P2_WIFI_FRIEND_VS:       //0x74
         case SECTION_P2_WIFI_FRIEND_TEAMVS:   //0x75
+        case SECTION_P1_WIFI_FRIEND_BALLOON:  //0x72
+        case SECTION_P1_WIFI_FRIEND_COIN:     //0x73
+        case SECTION_P2_WIFI_FRIEND_BALLOON:  //0x76
+        case SECTION_P2_WIFI_FRIEND_COIN:     //0x77
             if(system->IsContext(PULSAR_MODE_OTT)) {
                 this->CreateAndInitPage(*this, PAGE_TT_SPLITS);
                 Pages::RaceHUD::sInstance->nextPageId = PAGE_TT_SPLITS;
@@ -85,10 +89,6 @@ void ExpSection::CreatePulPages() {
                 this->CreateAndInitPage(*this, KO::WinnerPage::id);
             }
             break;
-        case SECTION_P1_WIFI_FRIEND_BALLOON:  //0x72
-        case SECTION_P1_WIFI_FRIEND_COIN:     //0x73
-        case SECTION_P2_WIFI_FRIEND_BALLOON:  //0x76
-        case SECTION_P2_WIFI_FRIEND_COIN:     //0x77
         case SECTION_SINGLE_P_FROM_MENU:         //0x48
         case SECTION_SINGLE_P_TT_CHANGE_CHARA:   //0x49
         case SECTION_SINGLE_P_TT_CHANGE_COURSE:  //0x4a

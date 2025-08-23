@@ -12,6 +12,8 @@
 #include <Config.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <core/egg/DVD/DvdRipper.hpp>
+#include <core/System/SystemManager.hpp>
+
 namespace Pulsar {
 
 System* System::sInstance = nullptr;
@@ -257,8 +259,8 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 //OptPack Pack ID
 kmWrite32(0x800017D0, 0x36B);
 
-//OptPack Pack Version 4656
-kmWrite32(0x800017D4, 0x00001230);
+//OptPack Pack Version 4662
+kmWrite32(0x800017D4, 0x00001236);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";
