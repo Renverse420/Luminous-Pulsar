@@ -13,6 +13,7 @@
 #include <SlotExpansion/CupsConfig.hpp>
 #include <core/egg/DVD/DvdRipper.hpp>
 #include <core/System/SystemManager.hpp>
+#include <Network/PacketExpansion.hpp>
 
 namespace Pulsar {
 
@@ -136,11 +137,19 @@ void System::UpdateContext() {
     Network::Mgr& netMgr = this->netMgr;
     const u32 sceneId = GameScene::GetCurrent()->id;
 
+    bool isRegionalRoom = controller->roomType == RKNet::ROOMTYPE_VS_REGIONAL || controller->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL 
+    || controller->roomType == RKNet::ROOMTYPE_BT_REGIONAL;
+
 
     bool is200 = racedataSettings.engineClass == CC_100 && this->info.Has200cc();
     bool isFeather = this->info.HasFeather();
     bool isUMTs = this->info.HasUMTs();
     bool isMegaTC = this->info.HasMegaTC();
+
+    bool isStartOPTWW = false;
+    bool isStartOTWW = false;
+
+
     u32 newContext = 0;
     if(sceneId != SCENE_ID_GLOBE && controller->connectionState != RKNet::CONNECTIONSTATE_SHUTDOWN) {
         switch(controller->roomType) {
@@ -158,6 +167,8 @@ void System::UpdateContext() {
                 isMiiHeads = newContext & (1 << PULSAR_MIIHEADS);
                 isRegs = newContext & (1 << PULSAR_REGS);
                 isRegsOnly = newContext & (1 << PULSAR_REGSONLY);
+                isStartOPTWW = newContext & (1 << PULSAR_STARTOPTWW);
+                isStartOTWW = newContext & (1 << PULSAR_STARTOTTWW);
                 if(isOTT) {
                     isUMTs &= newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -180,9 +191,9 @@ void System::UpdateContext() {
     
     u32 newContextValue = (isCT << PULSAR_CT) | (isHAW << PULSAR_HAW) | (isMiiHeads << PULSAR_MIIHEADS) | (isRegs << PULSAR_REGS) | (isRegsOnly << PULSAR_REGSONLY);
     if(isCT) { //contexts that should only exist when CTs are on
-        newContextValue |= (is200 << PULSAR_200) | (isFeather << PULSAR_FEATHER) | (isUMTs << PULSAR_UMTS) | (isMegaTC << PULSAR_MEGATC) | (isOTT << PULSAR_MODE_OTT) | (isKO << PULSAR_MODE_KO);
+        newContextValue |= (is200 << PULSAR_200) | (isFeather << PULSAR_FEATHER) | (isUMTs << PULSAR_UMTS) | (isMegaTC << PULSAR_MEGATC) | (isOTT << PULSAR_MODE_OTT) | (isKO << PULSAR_MODE_KO) |
+        (isStartOPTWW) << PULSAR_STARTOPTWW | (isStartOTWW) << PULSAR_STARTOTTWW;
     }
-
     this->context = newContextValue | preserved;
 
 
@@ -259,8 +270,8 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 //OptPack Pack ID
 kmWrite32(0x800017D0, 0x36B);
 
-//OptPack Pack Version 4662
-kmWrite32(0x800017D4, 0x00001236);
+//OptPack Pack Version 4672
+kmWrite32(0x800017D4, 0x00001240);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";

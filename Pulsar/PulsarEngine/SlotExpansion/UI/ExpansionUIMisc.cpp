@@ -3,21 +3,47 @@
 #include <MarioKartWii/UI/Page/Menu/CourseSelect.hpp>
 #include <MarioKartWii/UI/Page/Other/GhostSelect.hpp>
 #include <MarioKartWii/UI/Page/Other/Votes.hpp>
+#include <MarioKartWii/UI/Page/Other/SELECTStageMgr.hpp>
+#include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/Race/RaceInfo/RaceInfo.hpp>
 #include <SlotExpansion/CupsConfig.hpp>
 #include <SlotExpansion/UI/ExpCupSelect.hpp>
 #include <SlotExpansion/UI/ExpansionUIMisc.hpp>
-
+#include <Network/PacketExpansion.hpp>
+#include <core/nw4r/lyt/TextBox.hpp>
 
 namespace Pulsar {
 namespace UI {
-//Change brctr names
+
+static void BuildBlockedTrackName(wchar_t* dest, const wchar_t* src, u32 maxLen);
+
+bool IsTrackBlocked(PulsarId id) {
+    System* system = System::sInstance;
+    if (!system || !system->IsContext(PULSAR_CT)) return false;
+
+    const u32 blockingCount = system->GetInfo().GetTrackBlocking();
+    PulsarId* arr = system->netMgr.lastTracks;
+    if (blockingCount == 0 || arr == nullptr) return false;
+
+    for (u32 i = 0; i < blockingCount; i++) {
+        PulsarId cur = arr[i];
+
+        if (cur == PULSARID_NONE || cur == 0xFFFF)
+            continue;
+
+        if (cur == id)
+            return true;
+    }
+    return false;
+}
+
+// Change brctr names
 kmWrite24(0x808a85ef, 'PUL'); //used by 807e5754
 
 static void LoadCtrlMenuCourseSelectCupBRCTR(ControlLoader& loader, const char* folderName, const char* ctrName,
-    const char* variant, const char** animNames) {
-    loader.Load(UI::buttonFolder, "PULrseSelectCup", variant, animNames); //Move to button to avoid duplication of cup icon tpls
+                                             const char* variant, const char** animNames) {
+    loader.Load(UI::buttonFolder, "PULrseSelectCup", variant, animNames);  // Move to button to avoid duplication of cup icon tpls
 }
 kmCall(0x807e4538, LoadCtrlMenuCourseSelectCupBRCTR);
 
@@ -26,36 +52,76 @@ static void LoadCorrectTrackListBox(ControlLoader& loader, const char* folder, c
 }
 kmCall(0x807e5f24, LoadCorrectTrackListBox);
 
-//BMG
+int GetTrackVariantBMGId(PulsarId pulsarId, u8 /*variantIdx*/) {
+    return GetTrackBMGId(pulsarId, false);
+}
+
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName) {
-    u32 bmgId;
     u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
-    if (CupsConfig::IsReg(pulsarId)) bmgId = realId > 32 ? BMG_BATTLE : BMG_REGS;
-    else {
-        bmgId = BMG_TRACKS;
-        const CupsConfig* cupsConfig = CupsConfig::sInstance;
-        u8 variantIdx;
-        if (useCommonName) {
-            if (cupsConfig->GetTrack(pulsarId).variantCount > 0) variantIdx = 8;
-            else variantIdx = 0;
-        }
-        else variantIdx = cupsConfig->GetCurVariantIdx();
-        realId += variantIdx << 12;
+    if (CupsConfig::IsReg(pulsarId)) {
+        u32 base = (realId > 32) ? BMG_BATTLE : BMG_REGS;
+        return base + realId;
     }
-    return bmgId + realId;
+    return BMG_TRACKS + realId;
 }
 
 int GetTrackBMGByRowIdx(u32 cupTrackIdx) {
     const Pages::CupSelect* cup = SectionMgr::sInstance->curSection->Get<Pages::CupSelect>();
-    PulsarCupId curCupId;
-    if (cup == nullptr) curCupId = PULSARCUPID_FIRSTREG;
-    else curCupId = static_cast<PulsarCupId>(cup->ctrlMenuCupSelectCup.curCupID);
-    return GetTrackBMGId(CupsConfig::sInstance->ConvertTrack_PulsarCupToTrack(curCupId, cupTrackIdx), true);
+    PulsarCupId curCupId = cup ? 
+        static_cast<PulsarCupId>(cup->ctrlMenuCupSelectCup.curCupID) :
+        PULSARCUPID_FIRSTREG;
+
+    PulsarId trackId = CupsConfig::sInstance->ConvertTrack_PulsarCupToTrack(curCupId, cupTrackIdx);
+    return GetTrackBMGId(trackId, true);
 }
 kmWrite32(0x807e6184, 0x7FA3EB78);
 kmCall(0x807e6188, &GetTrackBMGByRowIdx);
 kmWrite32(0x807e6088, 0x7F63DB78);
 kmCall(0x807e608c, GetTrackBMGByRowIdx);
+
+static wchar_t s_blockedCupPreviewBuffer[4][0x100];
+
+static void SetCupPreviewTrackMessageImpl(LayoutUIControl* control, u32 bmgId, const Text::Info* info, u32 trackIdx){
+    const Pages::CupSelect* cup = SectionMgr::sInstance->curSection->Get<Pages::CupSelect>();
+    PulsarCupId curCupId = cup ?
+        static_cast<PulsarCupId>(cup->ctrlMenuCupSelectCup.curCupID) :
+        PULSARCUPID_FIRSTREG;
+
+    PulsarId trackId =
+        CupsConfig::sInstance->ConvertTrack_PulsarCupToTrack(curCupId, trackIdx);
+
+    if (IsTrackBlocked(trackId)) {
+
+    const wchar_t* originalText =
+    CupsConfig::IsReg(trackId) ? GetCommonMsg(bmgId, control) : GetCustomMsg(bmgId);
+
+
+        if (originalText != nullptr) {
+            BuildBlockedTrackName(s_blockedCupPreviewBuffer[trackIdx], originalText, 0x100);
+
+            Text::Info blockedInfo;
+            blockedInfo.strings[0] = s_blockedCupPreviewBuffer[trackIdx];
+            control->SetMessage(BMG_TEXT, &blockedInfo);
+            return;
+        }
+    }
+
+    control->SetMessage(bmgId, info);
+}
+
+static void SetCupPreviewTrackMessage_R27(LayoutUIControl* control, u32 bmgId, const Text::Info* info) {
+    register u32 trackIdx;
+    asm(mr trackIdx, r27;);
+    SetCupPreviewTrackMessageImpl(control, bmgId, info, trackIdx);
+}
+kmCall(0x807e609c, SetCupPreviewTrackMessage_R27);
+
+static void SetCupPreviewTrackMessage_R29(LayoutUIControl* control, u32 bmgId, const Text::Info* info) {
+    register u32 trackIdx;
+    asm(mr trackIdx, r29;);
+    SetCupPreviewTrackMessageImpl(control, bmgId, info, trackIdx);
+}
+kmCall(0x807e6198, SetCupPreviewTrackMessage_R29);
 
 int GetCurTrackBMG() {
     return GetTrackBMGId(CupsConfig::sInstance->GetWinning(), false);
@@ -85,8 +151,8 @@ static void SetAwardsResultCupInfo(LayoutUIControl& awardType, const char* textB
             swprintf(cupName, 0x20, L"Cup %d", realCupId);
             info.strings[0] = cupName;
             cupBmgId = BMG_TEXT;
-        }
-        else cupBmgId = BMG_CUPS + realCupId;
+        } else
+            cupBmgId = BMG_CUPS + realCupId;
         info.bmgToPass[1] = cupBmgId;
     }
     awardType.SetTextBoxMessage(textBoxName, bmgId, &info);
@@ -94,7 +160,6 @@ static void SetAwardsResultCupInfo(LayoutUIControl& awardType, const char* textB
 kmCall(0x805bcb88, SetAwardsResultCupInfo);
 
 static void SetGPIntroInfo(LayoutUIControl& titleText, u32 bmgId, Text::Info& info) {
-
     PulsarCupId id = CupsConfig::sInstance->lastSelectedCup;
     if (!CupsConfig::IsRegCup(id)) {
         titleText.layout.GetPaneByName("cup_icon")->flag &= ~1;
@@ -106,10 +171,9 @@ static void SetGPIntroInfo(LayoutUIControl& titleText, u32 bmgId, Text::Info& in
             swprintf(cupName, 0x20, L"Cup %d", realCupId);
             info.strings[0] = cupName;
             cupBmgId = BMG_TEXT;
-        }
-        else cupBmgId = BMG_CUPS + realCupId;
+        } else
+            cupBmgId = BMG_CUPS + realCupId;
         info.bmgToPass[1] = cupBmgId;
-
     }
     titleText.SetMessage(bmgId, &info);
 }
@@ -129,9 +193,8 @@ static void SetGPBottomText(CtrlMenuInstructionText& bottomText, u32 bmgId, Text
         u32 rankBmg;
         if (status == 0xFF) {
             trophyBmg = BMG_GP_BLANK;
-            rankBmg= BMG_GP_BLANK;
-        }
-        else {
+            rankBmg = BMG_GP_BLANK;
+        } else {
             trophyBmg = BMG_GP_GOLD_TROPHY + Settings::Mgr::ComputeTrophyFromStatus(status);
             rankBmg = BMG_GP_RANK_3STARS + Settings::Mgr::ComputeRankFromStatus(status);
         }
@@ -156,6 +219,7 @@ static void CourseVoteBMG(VoteControl* vote, bool isCourseIdInvalid, PulsarId co
     u32 bmgId = courseVote;
     if (bmgId != 0x1101 && bmgId < 0x2498) bmgId = GetTrackBMGId(courseVote, true);
     vote->Fill(isCourseIdInvalid, bmgId, miiGroup, playerId, isLocalPlayer, team);
+    SetVoteControlMessage(*vote, bmgId, courseVote, playerId);
 }
 kmCall(0x806441b8, CourseVoteBMG);
 
@@ -167,12 +231,28 @@ static bool BattleArenaBMGFix(SectionId sectionId) {
 }
 kmCall(0x8083d02c, BattleArenaBMGFix);
 
-
 //kmWrite32(0x80644340, 0x7F64DB78);
 static void WinningTrackBMG(PulsarId winningCourse) {
     register Pages::Vote* vote;
     asm(mr vote, r27;);
-    vote->trackBmgId = GetTrackBMGId(winningCourse, true);
+
+    u8 variantIdx = 0;
+    if (!CupsConfig::IsReg(winningCourse)) {
+        const CupsConfig* cupsConfig = CupsConfig::sInstance;
+        if (cupsConfig->GetTrack(winningCourse).variantCount > 0) {
+            RKNet::Controller* controller = RKNet::Controller::sInstance;
+            RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+            const Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
+            const u8 hostAid = sub.hostAid;
+
+            if (hostAid == sub.localAid) {
+                variantIdx = handler.toSendPacket.variantIdx;
+            } else {
+                variantIdx = handler.receivedPackets[hostAid].variantIdx;
+            }
+        }
+    }
+    vote->trackBmgId = GetTrackVariantBMGId(winningCourse, variantIdx);
 }
 kmCall(0x80644344, WinningTrackBMG);
 
@@ -214,45 +294,116 @@ static void ExtCourseSelectCupInitSelf(CtrlMenuCourseSelectCup* courseCups) {
     NoteModelControl* positionArray = cup->modelPosition;
 
     switch (cup->extraControlNumber) {
-    case(2):
-        positionArray[0].positionAndscale[1].position.x = -52.0f;
-        positionArray[0].positionAndscale[1].position.y = -8.0f;
-        positionArray[0].positionAndscale[1].scale.x = 0.875f;
-        positionArray[0].positionAndscale[1].scale.z = 0.875f;
-        positionArray[1].positionAndscale[1].position.x = -52.0f;
-        positionArray[1].positionAndscale[1].position.y = -13.0f;
-        positionArray[1].positionAndscale[1].scale.x = 0.875f;
-        positionArray[1].positionAndscale[1].scale.z = 0.875f;
-        break;
-    case(1):
-        positionArray[0].positionAndscale[1].position.x = -32.0f;
-        positionArray[0].positionAndscale[1].position.y = -32.0f;
-        positionArray = curSection->Get<Pages::CourseSelect>()->modelPosition;
-        positionArray[0].positionAndscale[1].position.x = -32.0f;
-        positionArray[0].positionAndscale[1].position.y = -32.0f;
-        break;
-    case(4):
-        positionArray[3].positionAndscale[1].position.x = 64.0f;
-        positionArray[3].positionAndscale[1].position.y = -55.25f;
-        positionArray[3].positionAndscale[1].scale.x = 0.6875f;
-        positionArray[3].positionAndscale[1].scale.z = 0.6875f;
-    case(3):
-        positionArray[0].positionAndscale[1].position.x = 64.0f;
-        positionArray[0].positionAndscale[1].position.y = -64.0f;
-        positionArray[0].positionAndscale[1].scale.x = 0.6875f;
-        positionArray[0].positionAndscale[1].scale.z = 0.6875f;
-        positionArray[1].positionAndscale[1].position.x = 64.0f;
-        positionArray[1].positionAndscale[1].position.y = -64.0f;
-        positionArray[1].positionAndscale[1].scale.x = 0.6875f;
-        positionArray[1].positionAndscale[1].scale.z = 0.6875f;
-        positionArray[2].positionAndscale[1].position.x = 64.0f;
-        positionArray[2].positionAndscale[1].position.y = -55.25f;
-        positionArray[2].positionAndscale[1].scale.x = 0.6875f;
-        positionArray[2].positionAndscale[1].scale.z = 0.6875f;
-        break;
+        case (2):
+            positionArray[0].positionAndscale[1].position.x = -52.0f;
+            positionArray[0].positionAndscale[1].position.y = -8.0f;
+            positionArray[0].positionAndscale[1].scale.x = 0.875f;
+            positionArray[0].positionAndscale[1].scale.z = 0.875f;
+            positionArray[1].positionAndscale[1].position.x = -52.0f;
+            positionArray[1].positionAndscale[1].position.y = -13.0f;
+            positionArray[1].positionAndscale[1].scale.x = 0.875f;
+            positionArray[1].positionAndscale[1].scale.z = 0.875f;
+            break;
+        case (1):
+            positionArray[0].positionAndscale[1].position.x = -32.0f;
+            positionArray[0].positionAndscale[1].position.y = -32.0f;
+            positionArray = curSection->Get<Pages::CourseSelect>()->modelPosition;
+            positionArray[0].positionAndscale[1].position.x = -32.0f;
+            positionArray[0].positionAndscale[1].position.y = -32.0f;
+            break;
+        case (4):
+            positionArray[3].positionAndscale[1].position.x = 64.0f;
+            positionArray[3].positionAndscale[1].position.y = -55.25f;
+            positionArray[3].positionAndscale[1].scale.x = 0.6875f;
+            positionArray[3].positionAndscale[1].scale.z = 0.6875f;
+        case (3):
+            positionArray[0].positionAndscale[1].position.x = 64.0f;
+            positionArray[0].positionAndscale[1].position.y = -64.0f;
+            positionArray[0].positionAndscale[1].scale.x = 0.6875f;
+            positionArray[0].positionAndscale[1].scale.z = 0.6875f;
+            positionArray[1].positionAndscale[1].position.x = 64.0f;
+            positionArray[1].positionAndscale[1].position.y = -64.0f;
+            positionArray[1].positionAndscale[1].scale.x = 0.6875f;
+            positionArray[1].positionAndscale[1].scale.z = 0.6875f;
+            positionArray[2].positionAndscale[1].position.x = 64.0f;
+            positionArray[2].positionAndscale[1].position.y = -55.25f;
+            positionArray[2].positionAndscale[1].scale.x = 0.6875f;
+            positionArray[2].positionAndscale[1].scale.z = 0.6875f;
+            break;
     }
 };
 kmWritePointer(0x808d3190, ExtCourseSelectCupInitSelf); //807e45c0
+
+static void BuildBlockedTrackName(
+    wchar_t* dest,
+    const wchar_t* src,
+    u32 maxLen
+) {
+    if (maxLen < 3) {
+        dest[0] = L'\0';
+        return;
+    }
+
+    dest[0] = 0xF058;
+
+    u32 i = 0;
+    while (src[i] != L'\0' && 1 + i + 2 < maxLen) {
+        dest[1 + i] = src[i];
+        i++;
+    }
+
+    if (1 + i + 2 < maxLen) {
+        dest[1 + i]     = 0xF058;
+        dest[1 + i + 1] = L'\0';
+    } else {
+        dest[maxLen - 2] = 0xF058;
+        dest[maxLen - 1] = L'\0';
+    }
+}
+
+static wchar_t s_blockedTrackNameBuffer[4][0x100];
+
+void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx) {
+    if (IsTrackBlocked(trackId)) {
+    const wchar_t* originalText =
+    CupsConfig::IsReg(trackId) ? GetCommonMsg(bmgId, &button) : GetCustomMsg(bmgId);
+
+        if (originalText != nullptr) {
+            BuildBlockedTrackName(s_blockedTrackNameBuffer[buttonIdx], originalText, 0x100);
+
+            Text::Info info;
+            info.strings[0] = s_blockedTrackNameBuffer[buttonIdx];
+            button.SetMessage(BMG_TEXT, &info);
+            return;
+        }
+    }
+
+    button.SetMessage(bmgId);
+}
+
+static wchar_t s_blockedVoteNameBuffer[12][0x100];
+
+void SetVoteControlMessage(VoteControl& vote, u32 bmgId, PulsarId courseVote, u32 playerId) {
+    if (IsTrackBlocked(courseVote) && playerId < 12) {
+
+const wchar_t* originalText =
+    CupsConfig::IsReg(courseVote) ? GetCommonMsg(bmgId, &vote) : GetCustomMsg(bmgId);
+
+
+        if (originalText != nullptr) {
+            BuildBlockedTrackName(s_blockedVoteNameBuffer[playerId], originalText, 0x100);
+
+            Text::Info info;
+            info.strings[0] = s_blockedVoteNameBuffer[playerId];
+            vote.SetMessage(BMG_TEXT, &info);
+            return;
+        }
+    }
+}
+
+void ApplyBlockedColorToString(wchar_t* dest, const wchar_t* src, u32 maxLen) {
+    BuildBlockedTrackName(dest, src, maxLen);
+}
 
 static void ExtCourseSelectCourseInitSelf(CtrlMenuCourseSelectCourse* course) {
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
@@ -267,8 +418,10 @@ static void ExtCourseSelectCourseInitSelf(CtrlMenuCourseSelectCourse* course) {
         PushButton& curButton = course->courseButtons[i];
         curButton.buttonId = i;
         const u32 bmgId = GetTrackBMGByRowIdx(i);
-        curButton.SetMessage(bmgId);
-        if (cupsConfig->ConvertTrack_PulsarCupToTrack(cupsConfig->lastSelectedCup, i) == cupsConfig->GetSelected()) {
+        PulsarId trackId = cupsConfig->ConvertTrack_PulsarCupToTrack(cupsConfig->lastSelectedCup, i);
+        SetCourseButtonMessage(curButton, bmgId, trackId, i);
+
+        if (trackId == cupsConfig->GetSelected()) {
             toSelect = &curButton;
         }
     };

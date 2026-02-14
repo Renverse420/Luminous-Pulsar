@@ -68,12 +68,12 @@ u8 ConditionalFastFallingBody(const Kart::Sub& sub) {
             Input::ControllerHolder& controllerHolder = sub.GetControllerHolder();
             float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f :
                 (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
-            physicsHolder.physics->gravity -= input * 0.39f;
+            physicsHolder.physics->gravity -= input * 0.50f;
         }
     }
     return sub.GetPlayerIdx();
 }
-//kmCall(0x805967ac, ConditionalFastFallingBody);
+kmCall(0x805967ac, ConditionalFastFallingBody);
 
 
 void ConditionalFastFallingWheels(float unk_float, Kart::WheelPhysicsHolder* wheelPhysicsHolder, Vec3& gravityVector, const Mtx34& wheelMat) {
@@ -85,13 +85,13 @@ void ConditionalFastFallingWheels(float unk_float, Kart::WheelPhysicsHolder* whe
                 const Input::ControllerHolder& controllerHolder = wheelPhysicsHolder->GetControllerHolder();
                 float input = controllerHolder.inputStates[0].stick.z <= 0.0f ? 0.0f :
                     (controllerHolder.inputStates[0].stick.z + controllerHolder.inputStates[0].stick.z);
-                gravityVector.y -= input * 0.39f;
+                gravityVector.y -= input * 0.50f;
             }
         }
     }
     wheelPhysicsHolder->Update(gravityVector, wheelMat, unk_float);
 }
-//kmCall(0x805973b4, ConditionalFastFallingWheels);
+kmCall(0x805973b4, ConditionalFastFallingWheels);
 
 
 s32 HandleGroundFeatherCollision(const Kart::Collision& collision) {

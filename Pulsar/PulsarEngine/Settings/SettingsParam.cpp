@@ -33,6 +33,7 @@ u8 Params::optionsPerPagePerScroller[Params::pageCount][Params::maxScrollerCount
     { 0, 0, 0, 0, 0}, //OTT
     { 4, 4, 0, 0, 0}, //KO
     { 0, 0, 0, 0, 0}, //Menu2
+    //{ 18, 0, 0, 0, 0}, //Menu2
     //{}, //User
 };
 

@@ -2,12 +2,19 @@
 #define _EXPANSIONUIMISC_
 #include <kamek.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
+#include <MarioKartWii/UI/Ctrl/PushButton.hpp>
+#include <MarioKartWii/UI/Page/Other/Votes.hpp>
 #include <PulsarSystem.hpp>
 #include <UI/UI.hpp>
 
 namespace Pulsar {
 namespace UI {
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName);
+int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx);
+bool IsTrackBlocked(PulsarId id);
+void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx);
+void SetVoteControlMessage(VoteControl& vote, u32 bmgId, PulsarId courseVote, u32 playerId);
+void ApplyBlockedColorToString(wchar_t* dest, const wchar_t* src, u32 maxLen);
 
 inline void GetTrackBMG(char* dest, PulsarId id) {
     const wchar_t* name = UI::GetCustomMsg(GetTrackBMGId(id, false));
@@ -19,7 +26,6 @@ inline void GetTrackBMG(char* dest, PulsarId id) {
     wchar_t* cur = polish;
     const wchar_t* pos = name;
     while (token != nullptr) {
-
         wcsncpy(cur, pos, token - pos);
         cur = cur + (token - pos);
         cur[0] = '\0';
@@ -29,10 +35,9 @@ inline void GetTrackBMG(char* dest, PulsarId id) {
         token = wcschr(pos, L'\x1A');
     }
     snprintf(dest, 0x100, "%ls", finalString);
-
 }
 int GetTrackBMGByRowIdx(u32 cupTrackIdx);
 int GetCurTrackBMG();
-}//namespace UI
-}//namespace Pulsar
+}  // namespace UI
+}  // namespace Pulsar
 #endif

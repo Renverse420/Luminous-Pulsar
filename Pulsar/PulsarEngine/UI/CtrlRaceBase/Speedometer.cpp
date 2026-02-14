@@ -6,6 +6,7 @@ namespace Pulsar {
 namespace UI {
 u32 CtrlRaceSpeedo::Count() {
     const RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+    if (scenario.localPlayerCount > 1) return 0;
     u32 localPlayerCount = scenario.localPlayerCount;
     const SectionId sectionId = SectionMgr::sInstance->curSection->sectionId;
     if(sectionId >= SECTION_WATCH_GHOST_FROM_CHANNEL && sectionId <= SECTION_WATCH_GHOST_FROM_MENU) localPlayerCount += 1;

@@ -348,6 +348,14 @@ const wchar_t* GetCustomMsg(s32 bmgId) {
     const BMGHolder& bmg = System::sInstance->GetBMG();
     return GetMsgByMsgIdx(bmg, GetMsgIdxById(bmg, bmgId));
 }
+
+const wchar_t* GetCommonMsg(s32 bmgId, const LayoutUIControl* control) {
+    const BMGHolder& normal = control->commonBmgs;
+
+    int idx = GetMsgIdxById(normal, bmgId);
+    return GetMsg(normal, idx);
+}
+
 void ResetMatColor(lyt::Pane* pane, u32 color) {
     lyt::Material* mat = pane->material;
     ut::Color colors(color);

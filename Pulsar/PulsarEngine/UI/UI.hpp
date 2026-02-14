@@ -3,6 +3,7 @@
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
 #include <MarioKartWii/UI/Ctrl/UIControl.hpp>
 #include <UI/DisplayFC.hpp>
+#include <MarioKartWii/File/BMG.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -11,6 +12,7 @@ void ChangeImage(LayoutUIControl& control, const char* paneName, const char* tpl
 const wchar_t* GetCustomMsg(s32 bmgId);
 void UnbindRLMC(lyt::Material* mat);
 void ResetMatColor(lyt::Pane* pane, u32 color);
+const wchar_t* GetCommonMsg(s32 bmgId, const LayoutUIControl* control);
 /*Expanded pages: (do not necessitate a PulPageId)
 -ExpGhostSelect
 -ExpFroom
@@ -192,6 +194,9 @@ enum BMG {
     BMG_PLAY_TEAM_KO = 0x2918,
     BMG_PLAY_TEAM_OTTKO = 0x2919,
 
+    //start ww
+    BMG_OPTWW_START_MESSAGE = 0x6920,
+    BMG_OTTWW_START_MESSAGE = 0x6921,
 
     BMG_CUPS = 0x10000,
     BMG_TRACKS = 0x20000,

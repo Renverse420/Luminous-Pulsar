@@ -35,6 +35,8 @@ enum Context {
     PULSAR_REGSONLY,
     PULSAR_MODE_OTT,
     PULSAR_MODE_KO,
+    PULSAR_STARTOPTWW,
+    PULSAR_STARTOTTWW,
     PULSAR_CONTEXT_COUNT,
 };
 
@@ -50,12 +52,13 @@ private:
     void InitIO(IOType type) const;
     void InitCups(const ConfigFile& conf);
     void InitSettings(const u16* totalTrophyCount) const;
-    void UpdateContext();
 protected:
     //Virtual
     virtual void AfterInit() {};
 public:
     static System* sInstance;
+
+    void UpdateContext();
 
     virtual void SetUserInfo(Network::ResvInfo::UserInfo& userInfo) {};
     virtual bool CheckUserInfo(const Network::ResvInfo::UserInfo& userInfo) { return true; };
