@@ -45,27 +45,46 @@ static bool IsWiFiMenuSection(SectionId id) {
     }
 }
 
-void ResetTrackBlockingOnRoomEnd() {
-    SectionMgr* sectionMgr = SectionMgr::sInstance;
-    if (sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
+static u32 s_lastGroupId = 0;
 
-    const SectionId sectionId = sectionMgr->curSection->sectionId;
-    if (!IsWiFiMenuSection(sectionId)) return;
+static void ResetTrackBlocking_OnGroupIdChange() {
+    RKNet::Controller* c = RKNet::Controller::sInstance;
+    if (!c) return;
 
+    const RKNet::ControllerSub& sub = c->subs[c->currentSub];
+    const u32 curGroupId = sub.groupId;
+
+    // Detect groupId change
+    if (curGroupId == s_lastGroupId)
+        return;
+
+    // Log the change
+    OS::Report("[Pulsar] groupId changed: %u -> %u\n", s_lastGroupId, curGroupId);
+
+    // Update stored groupId
+    s_lastGroupId = curGroupId;
+
+    // Reset track blocking
     System* system = System::sInstance;
-    if (system == nullptr) return;
+    if (!system) return;
 
     Mgr& netMgr = system->netMgr;
     const u32 blockingCount = system->GetInfo().GetTrackBlocking();
 
-    if (netMgr.lastTracks != nullptr && blockingCount > 0) {
-        for (u32 i = 0; i < blockingCount; ++i) {
+    if (netMgr.lastTracks && blockingCount > 0) {
+        for (u32 i = 0; i < blockingCount; ++i)
             netMgr.lastTracks[i] = PULSARID_NONE;
-        }
+
         netMgr.curBlockingArrayIdx = 0;
+
+        if (curGroupId == 0)
+            OS::Report("[Pulsar] Reset track blocking: LEFT ROOM (groupId=0)\n");
+        else
+            OS::Report("[Pulsar] Reset track blocking: JOINED NEW ROOM (groupId=%u)\n", curGroupId);
     }
 }
-static SectionLoadHook resetTrackBlockingHook(ResetTrackBlockingOnRoomEnd);
+
+static SectionLoadHook groupIdChangeHook(ResetTrackBlocking_OnGroupIdChange);
 
 static void CalcSectionAfterRace(SectionMgr* sectionMgr, SectionId id) {
 

@@ -37,7 +37,7 @@ public:
     virtual void Animate(u64 option); //0x1c 80079290
     virtual void AnimateSelf(u64 option); //0x20 80079320
     virtual ut::Color GetVtxColor(u64 id) const; //0x24 80078ce0
-    virtual void SetVtxColor(u64 id, ut::Color color); //0x28 80078cf0
+    virtual void SetVtxColor(u32 id, ut::Color color); //0x28 80078cf0
     virtual u8 GetColorElement(u64 id) const; //0x2c 80078d00
     virtual void SetColorElement(u64 id, u8 value); //0x30 80078d30
     virtual u8 GetVtxColorElement(u64 id) const; //0x34 80078d60

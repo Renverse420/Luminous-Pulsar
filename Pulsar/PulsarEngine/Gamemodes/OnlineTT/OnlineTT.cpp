@@ -301,7 +301,7 @@ kmCall(0x80643da0, PreventVoteChangeSection);
 
 static void FixAfterDrift(Pages::Menu& menu, PageId id, PushButton& button) {  // menu is either drift or multidrift
     System* system = System::sInstance;
-    if (System::sInstance->IsContext(PULSAR_MODE_OTT)) {
+    if (system->IsContext(PULSAR_MODE_OTT) && system->ottMgr.voteState == COMBO_SELECTION) {
         system->ottMgr.voteState = COMBO_SELECTED;
         Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
         handler.toSendPacket.playersData[0].character = SectionMgr::sInstance->sectionParams->characters[0];
@@ -345,6 +345,25 @@ static bool MutePositionTracker(CtrlRaceRankNum& tracker) {
 }
 kmCall(0x807F4AC4, MutePositionTracker);
 kmCall(0x807f4b00, MutePositionTracker);
+
+static void ClearContextsUponWFCDisconnect() {
+    Pulsar::System* system = Pulsar::System::sInstance;
+    SectionId id = SectionMgr::sInstance->curSection->sectionId;
+
+    // Single-player menu
+    const bool isSinglePlayerMenu = (id == SECTION_SINGLE_P_FROM_MENU);
+
+    // Local splitscreen multiplayer menu
+    const bool isLocalMultiplayerMenu = (id == SECTION_LOCAL_MULTIPLAYER);
+
+    if (isSinglePlayerMenu || isLocalMultiplayerMenu) {
+        // Reset OTT context the same way StartWW does
+        system->context = 0;
+        system->UpdateContext();
+    }
+}
+
+SectionLoadHook clearContext(ClearContextsUponWFCDisconnect);
 
 //Hide Names part of battleglitch
 

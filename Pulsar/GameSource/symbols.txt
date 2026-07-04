@@ -1979,3 +1979,8 @@ FriendStatusHook = 0x8065a110
 
 UpdateRaceInstances__9RaceSceneFv = 0x80554ad4
 ptr_inputBase = 0x809BD70C
+EndState__4PageFv = 0x8060247c
+Exit__4PageFv = 0x80601f44
+SetFullVolume__Q25Audio14RaceRSARPlayerFv = 0x80716008
+HalveVolume__Q25Audio14RaceRSARPlayerFv = 0x80716018
+PlaySoundById__Q25Audio10RSARPlayerFUiUiP4Page = 0x807146a8

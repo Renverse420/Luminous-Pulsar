@@ -270,8 +270,8 @@ kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 //OptPack Pack ID
 kmWrite32(0x800017D0, 0x36B);
 
-//OptPack Pack Version 4672
-kmWrite32(0x800017D4, 0x00001240);
+//OptPack Pack Version 4673
+kmWrite32(0x800017D4, 0x00001241);
 
 const char System::pulsarString[] = "/Pulsar";
 const char System::CommonAssets[] = "/CommonAssets.szs";

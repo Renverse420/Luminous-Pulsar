@@ -13,7 +13,7 @@ public:
     const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override; //0xc 8007cc10
     void DrawSelf(const DrawInfo& info) override; //0x18 8007b870
     ut::Color GetVtxColor(u64 id) const override; //0x24 8007b7b0
-    void SetVtxColor(u64 id, ut::Color color) override; //0x28 8007b7e0
+    void SetVtxColor(u32 id, ut::Color color) override; //0x28 8007b7e0
     u8 GetVtxColorElement(u64 id) const override; //0x34 8007b830
     void SetVtxColorElement(u64 id, u8 value) override; //0x38 8007b850
     void LoadMtx(const DrawInfo& info) override; //0x70 8007c6b0

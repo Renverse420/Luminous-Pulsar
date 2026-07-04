@@ -360,7 +360,7 @@ kmWrite32(0x805A228C,0x60000000);
 kmWrite32(0x80856a28,0x48000050);
 
 //Show Nametags During Countdown By Ro
-kmWrite32(0x807F13F0,0x38600001);
+kmWrite32(0x807F13F8,0x4800006C);
 
 //Always Show Timer After Online Race Results by Sponge
 kmWrite32(0x8064DB2C,0x60000000); 
@@ -393,20 +393,6 @@ kmWrite32(0x800E1A58, 0x38C00000 | 7000);
 // Fix the "suspend bug" where DWC stalls suspending due to ongoing NATNEG [WiiLink24, MrBean35000vr]
 kmWrite32(0x800E77F8, 0x60000000);
 kmWrite32(0x800E77FC, 0x60000000);
-
-//HUD Color Modifier by Spaghetti Noppers
-kmWrite32(0x80895CC0, 0x00200086);
-kmWrite32(0x80895CC4, 0x008600FF);
-kmWrite32(0x80895CC8, 0x005200A3);
-kmWrite32(0x80895CCC, 0x00A300FF);
-kmWrite32(0x80895CD0, 0x005200A3);
-kmWrite32(0x80895CD4, 0x00A30046);
-kmWrite32(0x80895CD8, 0x00200086);
-kmWrite32(0x80895CDC, 0x008600FF);
-kmWrite32(0x80895CE0, 0x00200086);
-kmWrite32(0x80895CE4, 0x008600FF);
-kmWrite32(0x80895CE8, 0x00200086);
-kmWrite32(0x80895CEC, 0x00860046);
 
 //No Disconnect on Countdown by _tZ
 kmWrite32(0x80655578, 0x60000000);
